@@ -1,0 +1,171 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CeMAP Revision Centre</title>
+<style>
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;background:#f4f5f7;color:#17202a}
+header{background:#111827;color:#fff;padding:20px}h1{margin:0;font-size:22px}.muted{color:#66717d;font-size:14px}
+nav{display:flex;gap:8px;padding:10px;background:#fff;border-bottom:1px solid #ddd;position:sticky;top:0;z-index:2}
+button{border:0;border-radius:9px;padding:11px 14px;font-weight:700;background:#e7ebef;color:#17202a}
+button.primary{background:#111827;color:#fff}
+main{max-width:850px;margin:20px auto;padding:0 14px}.card{background:#fff;border:1px solid #ddd;border-radius:14px;padding:18px;margin-bottom:14px}
+h2{margin:0 0 12px;font-size:19px}label{display:block;font-weight:700;font-size:13px;margin:12px 0 6px}
+input,textarea,select{width:100%;box-sizing:border-box;padding:11px;border:1px solid #ccd3da;border-radius:9px;font:inherit}
+textarea{min-height:110px}.check{display:flex;gap:8px;align-items:center;margin:9px 0}.check input{width:auto}
+.q{border:1px solid #e0e4e8;border-radius:11px;padding:14px;margin:10px 0}.q b{line-height:1.4}
+.right{background:#eaf7ee;border:1px solid #b8dec2}.wrong{background:#fff0f0;border:1px solid #edbcbc}
+.pill{display:inline-block;background:#edf1f4;border-radius:20px;padding:3px 8px;font-size:12px}
+.hidden{display:none}.score{font-size:30px;font-weight:800}.concepts{background:#f5f7f9;padding:10px;border-radius:9px;margin-top:8px}
+</style>
+</head>
+<body>
+<header><h1>CeMAP Revision Centre</h1><div>CeMAP 1 · Section 1</div></header>
+<nav>
+<button id="navRevision">Revision Centre</button>
+<button id="navAdd">Add Question</button>
+<button id="navTest">Test Centre</button>
+</nav>
+<main>
+<section id="revision">
+<div class="card"><h2>Question Bank</h2><p class="muted">Choose a subsection to see every question in it.</p><div id="subsections"></div></div>
+<div id="revisionList"></div>
+</section>
+
+<section id="add" class="hidden">
+<div class="card"><h2>Add Question</h2>
+<div class="muted">Enter the question and the answer you already have. The app creates marking concepts from the answer; you can edit them before saving.</div>
+<label>Subsection</label><input id="sub" placeholder="e.g. 1.1">
+<label>Question</label><textarea id="q" placeholder="Enter question"></textarea>
+<label>Correct answer</label><textarea id="a" placeholder="Enter your existing answer"></textarea>
+<button id="makeConcepts">Create marking points</button>
+<div id="conceptArea" class="hidden">
+<label>Required marking points — one per line</label>
+<textarea id="concepts"></textarea>
+<p class="muted">All marking points must be covered for a RIGHT result. Wording can differ.</p>
+</div>
+<button id="saveQuestion" class="primary">Save Question</button>
+<div id="saveMsg" class="muted"></div>
+</div>
+</section>
+
+<section id="test" class="hidden">
+<div class="card"><h2>Build Test</h2><p class="muted">Tick any subsections. Every question in those subsections will be included.</p>
+<div id="testSubs"></div>
+<label>Question order</label>
+<select id="order"><option value="in">In order</option><option value="jumble">Jumbled</option><option value="random">Random</option></select>
+<br><br><button id="generate" class="primary">Generate Test</button>
+</div>
+<div id="testArea"></div>
+</section>
+</main>
+
+<script>
+const seed=[
+["1.1","What are the three main functions of money, and what does each mean?","Money has three main functions: a medium of exchange used to buy goods and services, a unit of account used to measure their value, and a store of value allowing money to be kept and used later."],
+["1.1","For money to work effectively as a medium of exchange, what four properties must it have?","To work effectively as a medium of exchange, money must be sufficient in quantity, generally acceptable, divisible into small units, and portable."],
+["1.1","Someone earns £2,000 today but doesn’t need to spend it until next month. Which function of money is being demonstrated, and why?","This demonstrates store of value because the £2,000 can be kept today and exchanged for goods or services at a later date."],
+["1.1","What does legal tender mean, and why is money more than just notes and coins?","Legal tender is money that must be accepted to settle a debt. Money is more than cash because it also includes funds held in current accounts, deposit accounts and other forms of investment."],
+["1.1","What role does the financial services industry play in moving money between people with surplus funds and those with a shortage of funds?","The financial services industry helps channel money from those with surplus funds who want to earn a return to those who need and are willing to pay to borrow money."],
+["1.1","What is a CBDC/digital pound, and what is the key difference between a CBDC and a cryptocurrency?","A CBDC/digital pound would be an electronic form of sterling issued and controlled by the Bank of England, similar to a digital banknote. Unlike cryptocurrency, it would be centralised and backed by the central bank rather than operating without a central authority."]
+];
+let qs=JSON.parse(localStorage.getItem("cemap_revision_v3")||"null")||seed.map(x=>({sub:x[0],q:x[1],a:x[2],points:points(x[2])}));
+
+function clean(s){return s.toLowerCase().replace(/[^a-z0-9£ ]/g," ").replace(/\s+/g," ").trim()}
+function points(a){
+ let known=[/medium of exchange/i,/unit of account/i,/store of value/i,/sufficient in quantity/i,/generally acceptable/i,/divisible/i,/portable/i,/legal tender/i,/current accounts?/i,/deposit accounts?/i,/investment/i,/surplus funds?/i,/shortage of funds?/i,/earn a return/i,/electronic form of sterling/i,/issued and controlled/i,/centralised/i,/central authority/i,/cryptocurrency/i];
+ let found=known.filter(r=>r.test(a)).map(r=>r.source.replace(/\\b|\\/g,"").replace(/[?()]/g,""));
+ if(found.length)return found;
+ return a.split(/,|\.|\band\b/i).map(x=>x.trim()).filter(x=>x.length>3).slice(0,8);
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function show(id){["revision","add","test"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id));render()}
+function render(){
+ let ss=[...new Set(qs.map(x=>x.sub))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+ document.getElementById("subsections").innerHTML=ss.map(s=>`<button class="subBtn" data-sub="${esc(s)}">${esc(s)} <span class="pill">${qs.filter(x=>x.sub===s).length}</span></button>`).join(" ");
+ document.querySelectorAll(".subBtn").forEach(b=>b.addEventListener("click",()=>viewSub(b.dataset.sub)));
+ document.getElementById("testSubs").innerHTML=ss.map(s=>`<label class="check"><input type="checkbox" value="${esc(s)}"> ${esc(s)} <span class="pill">${qs.filter(x=>x.sub===s).length}</span></label>`).join("");
+}
+function viewSub(s){
+ document.getElementById("revisionList").innerHTML=`<div class="card"><h2>${esc(s)}</h2>${qs.filter(x=>x.sub===s).map((x,i)=>`<div class="q"><b>${i+1}. ${esc(x.q)}</b><p><b>Answer:</b> ${esc(x.a)}</p></div>`).join("")}</div>`;
+}
+document.getElementById("navRevision").onclick=()=>show("revision");
+document.getElementById("navAdd").onclick=()=>show("add");
+document.getElementById("navTest").onclick=()=>show("test");
+
+document.getElementById("makeConcepts").onclick=()=>{
+ let a=document.getElementById("a").value.trim(); if(!a){alert("Enter the answer first.");return}
+ document.getElementById("concepts").value=points(a).join("\n");
+ document.getElementById("conceptArea").classList.remove("hidden");
+};
+document.getElementById("saveQuestion").onclick=()=>{
+ let sub=document.getElementById("sub").value.trim(),q=document.getElementById("q").value.trim(),a=document.getElementById("a").value.trim();
+ if(!sub||!q||!a){alert("Complete all three fields.");return}
+ if(document.getElementById("conceptArea").classList.contains("hidden"))document.getElementById("makeConcepts").click();
+ let p=document.getElementById("concepts").value.split("\n").map(x=>x.trim()).filter(Boolean);
+ qs.push({sub,q,a,points:p});localStorage.setItem("cemap_revision_v3",JSON.stringify(qs));render();
+ document.getElementById("sub").value="";document.getElementById("q").value="";document.getElementById("a").value="";document.getElementById("concepts").value="";document.getElementById("conceptArea").classList.add("hidden");document.getElementById("saveMsg").textContent="Question saved.";
+};
+
+let current=[];
+function generate(){
+ let chosen=[...document.querySelectorAll("#testSubs input:checked")].map(x=>x.value);
+ current=qs.filter(x=>chosen.includes(x.sub));
+ if(!current.length){alert("Tick at least one subsection.");return}
+ let mode=document.getElementById("order").value;
+ if(mode!=="in")current=[...current].sort(()=>Math.random()-.5);
+ document.getElementById("testArea").innerHTML=`<div class="card"><h2>${current.length}-Question Test</h2><div id="testQs"></div><button id="mark" class="primary">Mark Test</button></div>`;
+ document.getElementById("testQs").innerHTML=current.map((x,i)=>`<div class="q"><b>${i+1}. ${esc(x.q)}</b><textarea class="user" placeholder="Type your answer..."></textarea></div>`).join("");
+ document.getElementById("mark").onclick=mark;
+}
+function conceptCovered(c,ans){
+ let a=clean(ans), cc=clean(c);
+ if(a.includes(cc))return true;
+ let variants={
+ "medium of exchange":["medium exchange","buy goods","buy services","exchange goods"],
+ "unit of account":["unit account","measure value","measure their value"],
+ "store of value":["store value","kept later","keep money"],
+ "sufficient in quantity":["sufficient","enough quantity"],
+ "generally acceptable":["generally acceptable","widely accepted","accepted"],
+ "divisible":["divisible","small units","divided"],
+ "portable":["portable","easy to carry"],
+ "legal tender":["legal tender","settle debt","accepted to settle"],
+ "current accounts":["current account"],
+ "deposit accounts":["deposit account"],
+ "surplus funds":["surplus funds","excess funds"],
+ "shortage of funds":["shortage funds","need funds"],
+ "electronic form of sterling":["electronic sterling","digital sterling","digital pound"],
+ "issued and controlled":["issued","controlled"],
+ "centralised":["centralised","centralized","central authority"],
+ "central authority":["central authority"],
+ "cryptocurrency":["cryptocurrency","crypto"]
+ };
+ for(let k in variants)if(cc.includes(k)&&variants[k].some(v=>a.includes(v)))return true;
+ let ws=cc.split(" ").filter(w=>w.length>3), hits=ws.filter(w=>a.includes(w)).length;
+ return ws.length>0 && hits/ws.length>=.7;
+}
+function mark(){
+ let ans=[...document.querySelectorAll(".user")].map(x=>x.value);
+ let details=current.map((x,i)=>{let checks=x.points.map(p=>[p,conceptCovered(p,ans[i])]);return {x,ans:ans[i],ok:checks.length&&checks.every(z=>z[1]),checks}});
+ let score=details.filter(x=>x.ok).length;
+ let out=`<div class="card"><h2>Results</h2><div class="score">${score} / ${details.length}</div><p class="muted">${Math.round(score/details.length*100)}% correct</p>`;
+ details.forEach((d,i)=>{
+   let miss=d.checks.filter(z=>!z[1]).map(z=>`<div>• ${esc(z[0])}</div>`).join("");
+   out+=`<div class="result ${d.ok?"right":"wrong"}"><b>${d.ok?"RIGHT":"WRONG"} · Question ${i+1}</b><p><b>Your answer:</b> ${esc(d.ans||"(blank)")}</p>${!d.ok?`<p><b>Correct answer:</b> ${esc(d.x.a)}</p><div class="concepts"><b>Why:</b><br>${miss}</div>`:""}</div>`;
+ });
+ out+=`<button id="retry">Retry same questions</button> <button id="retryBad">Retry incorrect only</button></div>`;
+ document.getElementById("testArea").innerHTML=out;
+ document.getElementById("retry").onclick=()=>startPool(current);
+ document.getElementById("retryBad").onclick=()=>startPool(details.filter(x=>!x.ok).map(x=>x.x));
+}
+function startPool(pool){
+ current=pool;document.getElementById("testArea").innerHTML=`<div class="card"><h2>Retry · ${pool.length} questions</h2><div id="testQs"></div><button id="mark" class="primary">Mark Test</button></div>`;
+ document.getElementById("testQs").innerHTML=pool.map((x,i)=>`<div class="q"><b>${i+1}. ${esc(x.q)}</b><textarea class="user" placeholder="Type your answer..."></textarea></div>`).join("");
+ document.getElementById("mark").onclick=mark;
+}
+document.getElementById("generate").onclick=generate;
+render();viewSub("1.1");
+</script>
+</body>
+</html>
