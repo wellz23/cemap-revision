@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Optimal — Daily Execution Prototype</title>
+<style>
+:root{--bg:#f4f3ef;--paper:#fff;--ink:#171918;--muted:#777b76;--line:#dfe1dc;--green:#1f9d68;--green2:#dff4e9;--orange:#e89a35;--orange2:#fff0d9;--red:#d95555;--red2:#fde5e5;--gold:#c9a44c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,input,select{font:inherit}.app{max-width:1180px;margin:auto;padding:28px 28px 60px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}.eyebrow{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);font-weight:700}.date{font-size:30px;font-weight:750;letter-spacing:-.04em;margin-top:4px}.sub{color:var(--muted);font-size:13px;margin-top:4px}
+.nav{display:flex;gap:7px;background:#e9e9e4;border-radius:13px;padding:4px}.nav button{border:0;background:transparent;border-radius:10px;padding:9px 13px;color:#626661;cursor:pointer}.nav button.active{background:#fff;color:#111;box-shadow:0 1px 3px #00000012}
+.layout{margin-top:28px}.screen{display:none}.screen.active{display:block}
+.hero{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:end;margin-bottom:18px}.scoreWrap{display:flex;align-items:center;gap:13px}.person{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:#171918;color:#fff;font-weight:800}.score{font-size:34px;font-weight:800;letter-spacing:-.05em}.score small{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:0}
+.timelineWrap{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:22px 20px 20px;overflow:hidden}
+.timelineHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}.label{font-size:12px;font-weight:750;text-transform:uppercase;letter-spacing:.1em}.live{font-size:12px;color:var(--green);font-weight:700}
+.timeline{position:relative;min-width:940px;padding:28px 22px 16px}.axis{height:2px;background:#d5d8d2;position:absolute;left:22px;right:22px;top:53px}.now{position:absolute;top:21px;bottom:12px;width:2px;background:#171918;left:57%;z-index:3}.now span{position:absolute;top:-22px;left:-22px;background:#171918;color:#fff;border-radius:20px;padding:4px 8px;font-size:10px;font-weight:750}.hours{display:grid;grid-template-columns:repeat(9,1fr);position:relative;z-index:2}.hour{font-size:10px;color:#8a8d88}.events{position:relative;height:195px;margin-top:3px}.event{position:absolute;top:45px;transform:translateX(-50%);text-align:center;width:126px}.dot{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid #aeb3ac;margin:auto;position:relative;z-index:4}.event.done .dot{background:var(--green);border-color:var(--green)}.event.late .dot{background:var(--orange);border-color:var(--orange)}.event.missed .dot{background:var(--red);border-color:var(--red)}.event .card{margin-top:10px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:9px 8px;text-align:left}.event.done .card{border-color:#bfe6d1;background:#f7fcf9}.event.late .card{border-color:#f0d29f;background:#fffaf2}.event.missed .card{border-color:#f1bcbc;background:#fff8f8}.event strong{font-size:11px;display:block}.event small{font-size:10px;color:var(--muted);display:block;margin-top:2px}.actual{font-size:10px;font-weight:750;margin-top:5px}.bar{height:5px;background:#e8e9e5;border-radius:5px;overflow:hidden;margin-top:8px}.bar i{display:block;height:100%;background:var(--green);border-radius:5px}
+.controls{display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#fff;border-radius:11px;padding:10px 14px;cursor:pointer}.btn.primary{background:#171918;color:#fff;border-color:#171918}.btn.green{background:var(--green);color:#fff;border-color:var(--green)}.btn:hover{filter:brightness(.98)}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.metric{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}.metric b{font-size:20px}.metric span{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.sectionTitle{font-size:18px;font-weight:780;letter-spacing:-.025em;margin:26px 0 12px}.list{display:grid;gap:8px}.row{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 15px;display:flex;align-items:center;justify-content:space-between;gap:15px}.row .left{display:flex;align-items:center;gap:11px}.status{width:11px;height:11px;border-radius:50%;background:#c5c8c2}.status.g{background:var(--green)}.status.o{background:var(--orange)}.status.r{background:var(--red)}.row small{color:var(--muted)}.row b{font-size:13px}
+.planGrid{display:grid;grid-template-columns:1fr 350px;gap:16px}.panel{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px}.goalForm{display:grid;grid-template-columns:1fr 120px 130px auto;gap:8px}.goalForm input,.goalForm select{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fff}.planned{margin-top:14px;display:grid;gap:7px}.planned .row{padding:11px 12px}.lock{margin-top:14px;width:100%;padding:13px;border-radius:12px;border:0;background:#171918;color:#fff;font-weight:750;cursor:pointer}
+.saved{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.day{background:#fff;border:1px solid var(--line);border-radius:13px;padding:12px;cursor:pointer}.day:hover{border-color:#b9beb7}.day .d{font-size:11px;color:var(--muted)}.day .p{font-size:23px;font-weight:800;margin:7px 0}.mini{display:flex;gap:4px}.mini i{width:9px;height:9px;border-radius:50%;background:#d0d3ce}.mini i.g{background:var(--green)}.mini i.o{background:var(--orange)}.mini i.r{background:var(--red)}
+.detail{margin-top:16px;display:none}.detail.show{display:block}.detailHead{display:flex;justify-content:space-between;gap:10px;align-items:center}.back{border:0;background:transparent;color:var(--muted);cursor:pointer}
+.modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:20px;z-index:20}.modal.show{display:flex}.modalBox{background:#fff;border-radius:18px;max-width:430px;width:100%;padding:22px}.modalBox h2{margin:0 0 5px}.modalBox p{color:var(--muted);font-size:13px}.actions{display:flex;gap:8px;margin-top:18px}.actions button{flex:1}
+@media(max-width:760px){.app{padding:18px 14px 40px}.top{display:block}.nav{margin-top:16px;width:max-content}.hero{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,1fr)}.planGrid{grid-template-columns:1fr}.goalForm{grid-template-columns:1fr 1fr}.goalForm .wide{grid-column:1/-1}.saved{grid-template-columns:repeat(2,1fr)}.timelineWrap{overflow-x:auto}.date{font-size:25px}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+<header class="top">
+  <div><div class="eyebrow">OPTIMAL · DAILY EXECUTION</div><div class="date" id="dateTitle">Tuesday · 15 September</div><div class="sub">Plan it. Do it. Record it. Compare it.</div></div>
+  <nav class="nav" aria-label="Main"><button class="active" data-screen="today">Today</button><button data-screen="plan">Plan</button><button data-screen="progress">Progress</button><button data-screen="goals">Goals</button></nav>
+</header>
+
+<main class="layout">
+<section class="screen active" id="today">
+  <div class="hero">
+    <div><div class="eyebrow">LIVE DAY</div><div class="sectionTitle" style="margin:4px 0 0">Your plan, moving with you.</div></div>
+    <div class="scoreWrap"><div class="person">ME</div><div><div class="score" id="score">50%</div><div class="sub">execution so far</div></div></div>
+  </div>
+  <div class="timelineWrap">
+    <div class="timelineHead"><span class="label">Optimal → Actual</span><span class="live">● NOW · 14:03</span></div>
+    <div class="timeline">
+      <div class="axis"></div><div class="now"><span>NOW</span></div>
+      <div class="hours" id="hours"></div>
+      <div class="events" id="events"></div>
+    </div>
+    <div class="controls"><div class="sub">Tap an objective when you actually do it. The app records the real time.</div><button class="btn green" id="addLog">＋ Log something</button></div>
+  </div>
+  <div class="metrics">
+    <div class="metric"><b>1h 12m</b><span>CeMAP actual</span></div>
+    <div class="metric"><b>1h 30m</b><span>CeMAP optimal</span></div>
+    <div class="metric"><b>3 / 4</b><span>objectives on track</span></div>
+    <div class="metric"><b>−18m</b><span>behind optimal</span></div>
+  </div>
+  <div class="sectionTitle">Today's objectives</div>
+  <div class="list" id="todayList"></div>
+</section>
+
+<section class="screen" id="plan">
+  <div class="hero"><div><div class="eyebrow">PLAN TOMORROW</div><div class="sectionTitle" style="margin:4px 0 0">Build the day from left to right.</div><div class="sub">These are commitments for one day only. Nothing carries forward.</div></div><div class="eyebrow">WED · 16 SEP</div></div>
+  <div class="timelineWrap">
+    <div class="timelineHead"><span class="label">Tomorrow's timeline</span><span class="live">4 objectives</span></div>
+    <div class="timeline"><div class="axis"></div><div class="hours" id="planHours"></div><div class="events" id="planEvents"></div></div>
+  </div>
+  <div class="planGrid" style="margin-top:16px">
+    <div class="panel">
+      <div class="label">Add objective</div>
+      <div class="sub" style="margin:5px 0 12px">Use your recurring personal goals, then change the details for tomorrow.</div>
+      <form class="goalForm" id="goalForm">
+        <input class="wide" id="goalName" placeholder="Objective e.g. CeMAP revision" required>
+        <input id="goalTime" type="time" value="06:45" required>
+        <select id="goalType"><option>Target</option><option>Yes / No</option><option>Duration</option></select>
+        <button class="btn primary" type="submit">Add</button>
+      </form>
+      <div class="planned" id="planned"></div>
+      <button class="lock" id="lock">LOCK IN TOMORROW →</button>
+    </div>
+    <div class="panel">
+      <div class="label">Your day</div>
+      <div style="font-size:28px;font-weight:800;margin-top:8px">06:00 → 22:00</div>
+      <div class="sub" style="margin-top:8px">Wake · shower · CeMAP · work · gym · food · sleep</div>
+      <div style="margin-top:20px;padding-top:15px;border-top:1px solid var(--line)">
+        <div class="label">Planning rule</div>
+        <div style="font-size:13px;margin-top:7px;line-height:1.5">Set the day tonight. Tomorrow you only execute and record. At night, review and make a fresh plan.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="progress">
+  <div class="hero"><div><div class="eyebrow">SAVED DAYS</div><div class="sectionTitle" style="margin:4px 0 0">Your execution, at a glance.</div></div><div class="nav"><button class="active">Week</button><button>Month</button></div></div>
+  <div class="saved" id="saved"></div>
+  <div class="detail" id="detail">
+    <div class="panel">
+      <div class="detailHead"><div><div class="eyebrow">SAVED DAY</div><div class="sectionTitle" id="detailTitle" style="margin:4px 0 0">Tuesday · 15 September</div></div><button class="back" id="closeDetail">Close ×</button></div>
+      <div class="metrics" style="margin-top:18px"><div class="metric"><b id="detailScore">87%</b><span>execution</span></div><div class="metric"><b>6h 42m</b><span>CeMAP actual</span></div><div class="metric"><b>7h 30m</b><span>CeMAP optimal</span></div><div class="metric"><b>−48m</b><span>from optimal</span></div></div>
+      <div class="timelineWrap" style="margin-top:12px"><div class="timelineHead"><span class="label">Finished timeline</span><span class="sub">Optimal vs actual</span></div><div class="timeline"><div class="axis"></div><div class="hours" id="detailHours"></div><div class="events" id="detailEvents"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="goals">
+  <div class="hero"><div><div class="eyebrow">FOCUS</div><div class="sectionTitle" style="margin:4px 0 0">What are you building toward?</div></div></div>
+  <div class="panel">
+    <div class="row"><div><b>Finish CeMAP 1</b><small> · primary focus</small><div class="sub">Use your daily CeMAP commitments to move this forward.</div></div><b>78%</b></div>
+    <div style="margin:15px 0 8px;height:8px;background:#e7e8e4;border-radius:10px;overflow:hidden"><div style="width:78%;height:100%;background:var(--gold);border-radius:10px"></div></div>
+    <div class="metrics"><div class="metric"><b>12h 42m</b><span>completed</span></div><div class="metric"><b>14h 30m</b><span>planned</span></div><div class="metric"><b>8 / 10</b><span>days followed</span></div><div class="metric"><b>88%</b><span>execution</span></div></div>
+  </div>
+</section>
+</main>
+
+<div class="modal" id="modal"><div class="modalBox"><h2 id="modalTitle">Log objective</h2><p id="modalText">Record what actually happened.</p><div class="actions"><button class="btn" id="noBtn">Missed</button><button class="btn" id="partialBtn">Partial</button><button class="btn green" id="yesBtn">Done</button></div></div></div>
+</div>
+<script>
+(()=>{const root=document.getElementById('app');let activeId=null;
+const data=[
+{id:1,time:'06:00',name:'Wake up',detail:'Target 06:00',state:'done',actual:'06:02'},
+{id:2,time:'06:30',name:'Shower + coffee',detail:'Ready by 06:30',state:'done',actual:'06:27'},
+{id:3,time:'06:45',name:'CeMAP revision',detail:'1h 30m target',state:'late',actual:'Started 07:08 · 1h 12m'},
+{id:4,time:'18:00',name:'Gym',detail:'Go after work',state:'pending',actual:'Not logged yet'}
+];
+const plan=[
+{id:1,time:'06:00',name:'Wake up',detail:'Target 06:00'},
+{id:2,time:'06:30',name:'Shower + coffee',detail:'Ready by 06:30'},
+{id:3,time:'06:45',name:'CeMAP revision',detail:'1h 30m target'},
+{id:4,time:'18:00',name:'Gym',detail:'Go after work'}
+];
+function h(n){return String(n).padStart(2,'0')+':00'}
+function renderHours(id){document.getElementById(id).innerHTML=[6,8,10,12,14,16,18,20,22].map(x=>`<div class="hour">${h(x)}</div>`).join('')}
+function pos(t){let [hh,mm]=t.split(':').map(Number);return ((hh+mm/60-6)/16*100)}
+function renderEvents(id,items,interactive=false){let el=document.getElementById(id);el.innerHTML=items.map(x=>{let cls=x.state||'';return `<div class="event ${cls}" style="left:${pos(x.time)}%" data-id="${x.id}"><div class="dot"></div><div class="card"><strong>${x.name}</strong><small>${x.detail}</small>${x.actual?`<div class="actual">${x.actual}</div>`:''}</div></div>`}).join('');if(interactive)el.querySelectorAll('.event').forEach(e=>e.addEventListener('click',()=>openModal(Number(e.dataset.id))))}
+function renderList(){document.getElementById('todayList').innerHTML=data.map(x=>`<div class="row"><div class="left"><i class="status ${x.state==='done'?'g':x.state==='late'?'o':x.state==='missed'?'r':''}"></i><div><b>${x.name}</b><small> · ${x.detail}</small></div></div><button class="btn" data-log="${x.id}">${x.state==='pending'?'Log result':'View'}</button></div>`).join('');document.querySelectorAll('[data-log]').forEach(b=>b.addEventListener('click',()=>openModal(Number(b.dataset.log))))}
+function renderPlan(){renderHours('planHours');renderEvents('planEvents',plan);document.getElementById('planned').innerHTML=plan.map(x=>`<div class="row"><div><b>${x.time}</b> · ${x.name}<small> ${x.detail}</small></div><button class="btn" data-del="${x.id}">Remove</button></div>`).join('');document.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{let i=plan.findIndex(x=>x.id==b.dataset.del);if(i>=0)plan.splice(i,1);renderPlan()})}
+function openModal(id){activeId=id;let x=data.find(a=>a.id===id);document.getElementById('modalTitle').textContent=x.name;document.getElementById('modalText').textContent='Choose the result. The app records the moment you logged it.';document.getElementById('modal').classList.add('show')}
+function setState(s){let x=data.find(a=>a.id===activeId);if(x){x.state=s;x.actual=s==='done'?'Logged just now':s==='late'?'Logged late':'Not completed'}document.getElementById('modal').classList.remove('show');renderEvents('events',data,true);renderList();document.getElementById('score').textContent=(s==='done'?'75%':'50%')}
+document.getElementById('yesBtn').addEventListener('click',()=>setState('done'));document.getElementById('partialBtn').addEventListener('click',()=>setState('late'));document.getElementById('noBtn').addEventListener('click',()=>setState('missed'));document.getElementById('modal').addEventListener('click',e=>{if(e.target.id==='modal')e.currentTarget.classList.remove('show')});
+document.querySelectorAll('.nav [data-screen]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(b.dataset.screen).classList.add('active')}));
+document.getElementById('goalForm').addEventListener('submit',e=>{e.preventDefault();let name=document.getElementById('goalName').value.trim(),time=document.getElementById('goalTime').value;if(!name||!time)return;plan.push({id:Date.now(),time,name,detail:document.getElementById('goalType').value==='Duration'?'Duration target':'Daily objective'});plan.sort((a,b)=>a.time.localeCompare(b.time));e.target.reset();document.getElementById('goalTime').value='06:45';renderPlan()});
+document.getElementById('lock').addEventListener('click',()=>alert('Tomorrow is locked in. In the finished product this becomes the starting point for your live day.'));
+document.getElementById('addLog').addEventListener('click',()=>{let x={id:999,time:'14:00',name:'Quick objective',detail:'Logged during the day',state:'pending'};data.push(x);renderEvents('events',data,true);renderList()});
+document.getElementById('closeDetail').addEventListener('click',()=>document.getElementById('detail').classList.remove('show'));
+const savedData=[['Mon 14','91%',['g','g','g','o']],['Tue 15','87%',['g','g','o','g']],['Wed 16','94%',['g','g','g','g']],['Thu 17','76%',['g','o','g','o']],['Fri 18','—',['','','','']]];
+document.getElementById('saved').innerHTML=savedData.map((x,i)=>`<button class="day" data-day="${i}"><div class="d">${x[0]}</div><div class="p">${x[1]}</div><div class="mini">${x[2].map(c=>`<i class="${c}"></i>`).join('')}</div></button>`).join('');document.querySelectorAll('.day').forEach(b=>b.addEventListener('click',()=>{document.getElementById('detail').classList.add('show');document.getElementById('detailTitle').textContent=savedData[b.dataset.day][0]+' September';document.getElementById('detailScore').textContent=savedData[b.dataset.day][1];renderHours('detailHours');renderEvents('detailEvents',data)}));
+renderHours('hours');renderEvents('events',data,true);renderList();renderPlan();
+})();
+</script>
+</body>
+</html>
