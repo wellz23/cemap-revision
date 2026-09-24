@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My Planner</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f7f6;color:#17211b}
+.app{max-width:720px;margin:auto;min-height:100vh;padding:24px 18px 92px}
+h1{font-size:30px;margin:0 0 6px}.sub{color:#6b756e;margin-bottom:22px}
+.card{background:white;border:1px solid #e1e7e2;border-radius:20px;padding:18px;margin:12px 0;box-shadow:0 5px 20px rgba(20,40,25,.05)}
+.goal{display:flex;align-items:center;gap:14px}.goal+ .goal{margin-top:16px}
+.ring{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(#35b86b var(--p),#e6eee8 0);position:relative;flex:none}
+.ring:after{content:"";position:absolute;width:48px;height:48px;border-radius:50%;background:white}.ring b{position:relative;z-index:1;font-size:13px}
+.goal strong{display:block;font-size:16px}.muted{font-size:13px;color:#758078;margin-top:3px}
+.month{display:flex;align-items:center;justify-content:space-between;gap:12px}.month .ring{width:52px;height:52px}.month .ring:after{width:38px;height:38px}
+button{border:0;background:#eef7f0;color:#168449;border-radius:12px;padding:11px 14px;font-weight:650;cursor:pointer}
+.weeks{display:grid;grid-template-columns:1fr 1fr;gap:12px}.week{min-height:120px;text-align:left;background:white;border:1px solid #e1e7e2;border-radius:18px;padding:16px;cursor:pointer}
+.week b{display:block;margin-bottom:8px}.week span{color:#6f7972;font-size:13px}
+.progress{height:7px;background:#e7eee9;border-radius:10px;overflow:hidden;margin-top:14px}.progress i{display:block;height:100%;background:#35b86b;border-radius:10px}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(720px,100%);background:rgba(255,255,255,.96);border-top:1px solid #dfe6e1;padding:10px 12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.nav button{background:transparent;color:#69736c}.nav button.active{background:#e8f6ec;color:#168449}
+.hidden{display:none}.back{background:#f0f3f1;color:#4e5952;margin-bottom:14px}
+.day{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #edf0ed}.day:last-child{border-bottom:0}.day input{width:21px;height:21px;accent-color:#35b86b}.tag{margin-left:auto;font-size:12px;color:#68736b}
+@media(max-width:480px){.app{padding:20px 14px 90px}.weeks{grid-template-columns:1fr}.ring{width:58px;height:58px}.ring:after{width:43px;height:43px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div id="all">
+    <h1>My Planner</h1><div class="sub">Your months</div>
+    <button onclick="addMonth()">＋ Add month</button>
+    <div id="months"></div>
+  </div>
+
+  <div id="current" class="hidden">
+    <div class="month"><div><h1 id="monthTitle">September 2026</h1><div class="sub">Current month</div></div><div id="monthRing" class="ring" style="--p:0%"><b>0%</b></div></div>
+    <div class="card">
+      <h3 style="margin-top:0">Monthly goals</h3>
+      <div class="goal"><div class="ring" style="--p:72%"><b>72%</b></div><div><strong>Gym</strong><div class="muted">4 sessions each week</div></div></div>
+      <div class="goal"><div class="ring" style="--p:58%"><b>58%</b></div><div><strong>CeMAP</strong><div class="muted">1 hour+ study sessions</div></div></div>
+      <button style="margin-top:18px" onclick="alert('Goal editor would open here in the real app.')">＋ Add goal</button>
+    </div>
+    <h3>Weeks</h3>
+    <div class="weeks">
+      <button class="week" onclick="openWeek(1)"><b>Week 1</b><span>4 goals · 82%</span><div class="progress"><i style="width:82%"></i></div></button>
+      <button class="week" onclick="openWeek(2)"><b>Week 2</b><span>4 goals · 65%</span><div class="progress"><i style="width:65%"></i></div></button>
+      <button class="week" onclick="openWeek(3)"><b>Week 3</b><span>4 goals · 71%</span><div class="progress"><i style="width:71%"></i></div></button>
+      <button class="week" onclick="openWeek(4)"><b>Week 4</b><span>4 goals · 0%</span><div class="progress"><i style="width:0%"></i></div></button>
+    </div>
+  </div>
+
+  <div id="week" class="hidden">
+    <button class="back" onclick="show('current')">← September</button>
+    <h1 id="weekTitle">Week 1</h1><div class="sub">Plan and track each day</div>
+    <div class="card"><h3 style="margin-top:0">Weekly goals</h3><div class="muted">Gym · 4 sessions</div><div class="muted">CeMAP · 7 hours</div><div class="muted">Running · 3 sessions</div></div>
+    <div class="card">
+      <h3 style="margin-top:0">Daily goals</h3>
+      <label class="day"><input type="checkbox" onchange="updateWeek(this)">CeMAP — 1 hour+<span class="tag">Mon</span></label>
+      <label class="day"><input type="checkbox" onchange="updateWeek(this)">Gym<span class="tag">Mon</span></label>
+      <label class="day"><input type="checkbox" onchange="updateWeek(this)">CeMAP — 1 hour+<span class="tag">Tue</span></label>
+      <label class="day"><input type="checkbox" onchange="updateWeek(this)">Running<span class="tag">Tue</span></label>
+      <label class="day"><input type="checkbox" onchange="updateWeek(this)">Gym<span class="tag">Wed</span></label>
+      <button style="margin-top:15px">＋ Add daily goal</button>
+    </div>
+    <div class="card"><strong>Did I hit my weekly goals?</strong><div style="margin-top:14px"><button onclick="this.textContent='✓ YES'">YES</button> <button onclick="this.textContent='✕ NO';this.style.color='#a33'">NO</button></div></div>
+  </div>
+
+  <div class="nav"><button id="allBtn" class="active" onclick="show('all')">All Months</button><button id="curBtn" onclick="show('current')">Current Month</button></div>
+</div>
+<script>
+const months=[['September 2026',72],['August 2026',100],['July 2026',86]];
+function renderMonths(){document.getElementById('months').innerHTML=months.map(([m,p])=>`<div class="card month" onclick="selectMonth('${m}',${p})"><div><strong>${m}</strong><div class="muted">Gym · CeMAP</div></div><div class="ring" style="--p:${p}%"><b>${p}%</b></div></div>`).join('')}
+function show(id){['all','current','week'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));document.getElementById('allBtn').classList.toggle('active',id==='all');document.getElementById('curBtn').classList.toggle('active',id==='current')}
+function selectMonth(m,p){document.getElementById('monthTitle').textContent=m;document.getElementById('monthRing').style.setProperty('--p',p+'%');document.getElementById('monthRing').querySelector('b').textContent=p+'%';show('current')}
+function openWeek(n){document.getElementById('weekTitle').textContent='Week '+n;show('week')}
+function updateWeek(el){el.parentElement.style.opacity=el.checked?.55:1}
+function addMonth(){const name=prompt('Month name');if(name){months.unshift([name,0]);renderMonths()}}
+renderMonths();
+</script>
+</body>
+</html>
